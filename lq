@@ -1,0 +1,57 @@
+#!/bin/bash
+
+REPO=densuke/sl
+
+function call_q() {
+   echo "問題 $1 を呼び出しています。"
+   docker run -it --rm $REPO $(printf "%03d" "$1")
+}
+
+function usage() {
+	cat <<EOM
+Linux授業の問題を呼び出すツールです
+
+使い方: $(basename $0) コマンド|問題番号
+
+
+コマンド
+$(basename $0) update   --->  新規の問題を取り込みます(要ネットワーク接続)
+$(basename $0) reset    --->  何かあったときに問題システムを再インストールします
+$(basename $0) help     --->  この使い方を表示します
+$(basename $0) 問題番号 --->  指定された問題を呼び出します
+
+例
+$(basename $0) 30  ---> 問題番号30(030)を呼び出します
+ 
+EOM
+}
+
+if [ ! "$1" ]; then
+  usage
+  exit 1
+fi
+
+case "$1" in
+  update)
+    echo "問題システムを更新しています"
+    docker pull $REPO
+    ;;
+  reset)
+    echo "問題システムを再インストールします(時間がかかります)"
+    echo "10秒後に開始します、キャンセルしたければCtrl+Cで止めてください"
+    sleep 10
+    echo "問題システムを再インストールしています"
+    docker rmi -f $REPO $REPO:latest $REPO:base
+    #docker images | tail -n +2 | awk '{print $3}' | xargs -n1 docker rmi -f
+    docker pull $REPO
+    ;;
+  help)
+    usage
+    exit 0
+    ;;
+  *)
+    call_q "$1"
+    ;;
+esac
+exit $?
+
